@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<div id="app"></div>
+<script>
+    // 渲染器
+    function createRenderer(options = {}) {
+        const {
+            createElement,
+            setElementText,
+            insert
+        } = options
+
+        // 挂载函数
+        function mountElement(vnode, container) {
+            const el = createElement(vnode.type)
+            if (typeof vnode.children === 'string') {
+                setElementText(el, vnode.children)
+            }
+            insert(el, container)
+        }
+
+        // 补丁函数
+        function patch(oldVNode, newVNode, container) {
+            if (!oldVNode) {
+                // 挂载
+                mountElement(newVNode, container)
+            } else {
+                // 打补丁
+            }
+        }
+
+        // 渲染函数
+        function render(vnode, container) {
+            if (vnode) {
+                // 新vnode存在，将其与旧vnode一起传递给patch函数打补丁
+                patch(container._vnode, vnode, container)
+            } else {
+                if (container._vnode) {
+                    // 新vnode不存在，旧vnode存在，说明是卸载(unmount)操作
+                    // 清空DOM
+                    container.innerHTML = ''
+                }
+            }
+            container._vnode = vnode // vnode改成旧的
+        }
+
+        // 同构渲染
+        function hydrate(vnode, container) {
+
+        }
+
+        return {
+            render,
+            hydrate
+        }
+    }
+
+    const vnode = {
+        type: 'h1',
+        children: 'hello'
+    }
+    const browserOption = {
+        createElement(tag) {
+            return document.createElement(tag)
+        },
+        setElementText(el, text) {
+            el.textContent = text
+        },
+        insert(el, parent, anchor = null) {
+            parent.insertBefore(el, anchor)
+        }
+    }
+    const renderer = createRenderer(browserOption)
+    renderer.render(vnode, document.getElementById('app'))
+
+    // 自定义渲染器
+    const printOption = {
+        createElement(tag) {
+            console.log(`创建元素${tag}`)
+            return {tag}
+        },
+        setElementText(el, text) {
+            console.log(`设置 ${JSON.stringify(el)} 的文本内容为： ${text}`)
+            el.text = text
+        },
+        insert(el, parent, anchor) {
+            console.log(`将 ${JSON.stringify(el)} 添加到 ${JSON.stringify(parent)} 下`)
+            parent.children = el
+        }
+    }
+    const rendererPrint = createRenderer(printOption)
+    // const container = {type: 'root'}
+    rendererPrint.render(vnode, {type: 'root'})
+</script>
+</body>
+</html>

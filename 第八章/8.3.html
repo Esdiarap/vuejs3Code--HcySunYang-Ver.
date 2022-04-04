@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<div id="app"></div>
+<script>
+    // propsKey 属性是否应该作为DOM Property被设置。
+    // true 表示可以使用DOM Property设置，el[propsKey] = xx, false表示只可以用setAttribute设置
+    function shouldSetAsProps(el, propsKey, value) {
+        // 所有表单元素都具有form属性表示
+        if (propsKey === 'form' && el.tagName.toLowerCase() === 'input')
+            return false
+        return propsKey in el
+    }
+
+    // 渲染器
+    function createRenderer(options = {}) {
+        const {
+            createElement,
+            setElementText,
+            insert,
+            patchProps
+        } = options
+
+        // 挂载函数
+        function mountElement(vnode, container) {
+            const el = createElement(vnode.type)
+            // children处理
+            if (typeof vnode.children === 'string') {
+                // 如果节点值是string，设置文本
+                setElementText(el, vnode.children)
+            } else if (Array.isArray(vnode.children)) {
+                // children是一个数组，遍历这个数组，数组每个元素都是一个vnode
+                // 调用patch将他们挂载上去. oldVNode=null, container = el
+                vnode.children.forEach(child => {
+                    patch(null, child, el)
+                })
+            }
+            // 设置vnode属性
+            if (vnode.props) {
+                for (const propsKey in vnode.props) {
+                    const value = vnode.props[propsKey];
+                    /*
+                    // if (propsKey in el) { // HTML Attribute 跟 DOM Property有对应
+                    if (shouldSetAsProps(el, propsKey, value)) { // HTML Attribute 跟 DOM Property有对应
+                        const type = typeof el[propsKey]
+
+                        // 如果type 是布尔类型的值而且value是空字符串，说明应该设置为true，而不是false
+                        if (type === 'boolean' && value === '') el[propsKey] = true // 矫正设置DOM Property
+                        else el[propsKey] = value // 设置DOM Property
+
+                    } else { // HTML Attribute 和 DOM Property 没对应，比如class 和 className
+                        el.setAttribute(propsKey, vnode.props[propsKey])
+                    }
+                    */
+                    patchProps(el, propsKey, null, value)
+                }
+            }
+            // 将el挂载在container上
+            insert(el, container)
+        }
+
+        // 补丁函数
+        function patch(oldVNode, newVNode, container) {
+            if (!oldVNode) {
+                // 挂载
+                mountElement(newVNode, container)
+            } else {
+                // 打补丁
+            }
+        }
+
+        // 渲染函数
+        function render(vnode, container) {
+            if (vnode) {
+                // 新vnode存在，将其与旧vnode一起传递给patch函数打补丁
+                patch(container._vnode, vnode, container)
+            } else {
+                if (container._vnode) {
+                    // 新vnode不存在，旧vnode存在，说明是卸载(unmount)操作
+                    // 清空DOM
+                    container.innerHTML = ''
+                }
+            }
+            container._vnode = vnode // vnode改成旧的
+        }
+
+        // 同构渲染
+        function hydrate(vnode, container) {
+
+        }
+
+        return {
+            render,
+            hydrate
+        }
+    }
+
+    const vnode = {
+        type: 'div',
+        props: {
+            id: 'foo',
+            class: 'ds'
+        },
+        children: [
+            {
+                type: 'h1',
+                children: 'hello h1'
+            }
+        ]
+    }
+    const renderer = createRenderer({
+        createElement(tag) {
+            return document.createElement(tag)
+        },
+        setElementText(el, text) {
+            el.textContent = text
+        },
+        insert(el, parent, anchor = null) {
+            parent.insertBefore(el, anchor)
+        },
+        patchProps(el, propsKey, previousValue, nextValue) {
+            if (shouldSetAsProps(el, propsKey, nextValue)) { // HTML Attribute 跟 DOM Property有对应
+                const type = typeof el[propsKey]
+
+                // 如果type 是布尔类型的值而且value是空字符串，说明应该设置为true，而不是false
+                if (type === 'boolean' && nextValue === '') el[propsKey] = true // 矫正设置DOM Property
+                else el[propsKey] = nextValue // 设置DOM Property
+
+            } else { // HTML Attribute 和 DOM Property 没对应，比如class 和 className
+                el.setAttribute(propsKey, vnode.props[propsKey])
+            }
+        }
+    })
+    renderer.render(vnode, document.getElementById('app'))
+
+</script>
+</body>
+</html>
