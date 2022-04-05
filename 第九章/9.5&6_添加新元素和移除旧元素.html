@@ -27,7 +27,7 @@
         } = options
 
         // 挂载函数
-        function mountElement(vnode, container) {
+        function mountElement(vnode, container, anchor) {
             // 通过vnode的el属性获得真实DOM
             const el = vnode.el = createElement(vnode.type)
             // children处理
@@ -49,7 +49,7 @@
                 }
             }
             // 将el挂载在container上
-            insert(el, container)
+            insert(el, container, anchor)
         }
 
         // 更新函数
@@ -114,10 +114,27 @@
                             }
                         }
                         if (!find) { // 该newVNode 没有匹配到oldVNode
-
+                            const prevNode = newChildren[i - 1]
+                            let anchor = null
+                            if (prevNode) { // 前一个newVNode存在
+                                anchor = prevNode.el.nextSibling
+                            } else { // 该newVNode是第一个而且没匹配到oldVNode
+                                anchor = container.firstChild
+                            }
+                            // 挂载newVNode
+                            patch(null, newVNode, container, anchor)
                         }
                     }
 
+                    // 上一步是更新newVNode，更新完之后遍历oldVnode,查看是否有没匹配的节点
+                    // 如果有就删掉这个oldVnode
+                    for (let i = 0; i < oldLen; i++) {
+                        const oldVnode = oldChildren[i]
+                        const has = newChildren.find(newVnode => newVnode.key === oldVnode.key)
+                        if (!has) { // 此oldVnode没有匹配任何的newVnode, 就要吧这个oldVnode删掉
+                            unmounted(oldVnode.el)
+                        }
+                    }
                 } else {
                     // 此时，旧子节点的类型要么是文本类型，要么是无
                     // 但无论那种情况，都需要将容器清空，然后将新的一组子节点逐个挂载
@@ -136,7 +153,7 @@
         }
 
         // 补丁函数
-        function patch(oldVNode, newVNode, container) {
+        function patch(oldVNode, newVNode, container, anchor) {
             // oldVNode存在，新旧vnode的type不同
             if (oldVNode && oldVNode.type !== newVNode.type) {
                 unmounted(oldVNode)
@@ -147,7 +164,7 @@
 
             // 开始判断vnode的type
             if (typeof type === 'string') { // 普通标签类型的VNode.
-                if (!oldVNode) mountElement(newVNode, container) // 挂载
+                if (!oldVNode) mountElement(newVNode, container, anchor) // 挂载
                 else patchElement(oldVNode, newVNode) // 更新
             } else if (typeof type === 'object') {// 组件类型的VNode 省略代码
             } else if (type === Text) { // 文本类型的VNode 省略代码
