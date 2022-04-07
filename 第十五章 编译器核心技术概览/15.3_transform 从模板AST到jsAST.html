@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<script>
+    const State = {
+        initial: 1,
+        tagOpen: 2,
+        tagName: 3,
+        text: 4,
+        tagEnd: 5,
+        tagEndName: 6
+    }
+
+    function isAlpha(char) {
+        return char >= 'a' && char <= 'z' || char >= 'A' && char <= 'Z'
+    }
+
+    function tokenize(str) {
+        let currentState = State.initial
+        const chars = [] // 字符缓冲区
+        const tokens = [] // tokens
+        while (str) {
+            const char = str[0] // 取出，没有消费
+            switch (currentState) {
+                case State.initial:
+                    if (char === '<') {
+                        currentState = State.tagOpen
+                        str = str.slice(1) // 消费
+                    } else if (isAlpha(char)) {
+                        currentState = State.text
+                        chars.push(char) // 推入缓冲区
+                        str = str.slice(1) // 消费
+                    }
+                    break
+                case State.tagOpen:
+                    if (isAlpha(char)) {
+                        currentState = State.tagName
+                        chars.push(char)
+                        str = str.slice(1)
+                    } else if (char === '/') {
+                        currentState = State.tagEnd
+                        str = str.slice(1)
+                    }
+                    break
+                case State.tagName:
+                    if (isAlpha(char)) {
+                        chars.push(char)
+                        str = str.slice(1)
+                    } else if (char === '>') {
+                        currentState = State.initial
+                        tokens.push({ // 推入token
+                            type: 'tag',
+                            name: chars.join('')
+                        })
+                        chars.length = 0 // 清空缓冲区
+                        str = str.slice(1)
+                    }
+                    break
+                case State.text:
+                    if (isAlpha(char)) {
+                        chars.push(char)
+                        str = str.slice(1)
+                    } else if (char === '<') {
+                        currentState = State.tagOpen
+                        tokens.push({
+                            type: 'text',
+                            content: chars.join('')
+                        })
+                        chars.length = 0
+                        str = str.slice(1)
+                    }
+                    break
+                case State.tagEnd:
+                    if (isAlpha(char)) {
+                        currentState = State.tagEndName
+                        chars.push(char)
+                        str = str.slice(1)
+                    }
+                    break
+                case State.tagEndName:
+                    if (isAlpha(char)) {
+                        chars.push(char)
+                        str = str.slice(1)
+                    } else if (char === '>') {
+                        currentState = State.initial
+                        tokens.push({
+                            type: 'tagEnd',
+                            name: chars.join('')
+                        })
+                        chars.length = 0
+                        str = str.slice(1)
+                    }
+                    break
+            }
+        }
+        return tokens
+    }
+
+    function parse(str) {
+        const tokens = tokenize(str)
+
+        const root = {
+            type: 'Root',
+            children: []
+        }
+        const elementStack = [root] // 一开始只有root
+
+        while (tokens.length) {
+            const parent = elementStack[elementStack.length - 1] // 栈顶
+            const t = tokens[0] // 每次都取出第一个token
+            switch (t.type) {
+                case 'tag':
+                    const elementNode = {
+                        type: 'Element',
+                        tag: t.name,
+                        children: []
+                    }
+                    parent.children.push(elementNode) // 父元素的children收集该子节点
+                    elementStack.push(elementNode) // 栈顶入栈
+                    break
+                case 'text':
+                    const textNode = {
+                        type: 'Text',
+                        content: t.content
+                    }
+                    parent.children.push(textNode) // 父元素的children收集该子节点
+                    break
+                case 'tagEnd':
+                    elementStack.pop() // 栈顶出栈
+                    break
+            }
+            tokens.shift() // 消费token
+        }
+
+        return root
+    }
+
+    // 打印ast节点信息
+    function dump(node, indent = 0) {
+        const type = node.type // 节点类型
+        // 根据节点类型来输出信息
+        // root -> '' , element -> node.tag , Text -> node.content
+        const desc = type === 'Root' ? '' : type === 'Element' ? node.tag : node.content
+        console.log(`${'-'.repeat(indent)}${type}:${desc}`)
+        // 递归打印子节点
+        if (node.children) {
+            node.children.forEach(n => dump(n, indent + 2))
+        }
+    }
+
+    // 对模板AST中节点进行访问
+    function traverseNode(ast, context) {
+        context.currentNode = ast // 将上下文中的currentNode设置为当前node
+        const transforms = context.transform // 转变数组transforms
+        if (transforms) {
+            for (let i = 0; i < transforms.length; i++){
+                transforms[i](context.currentNode, context)
+                // 每次transform都有可能导致currentNode变为null, 如果为null直接返回
+                if (!context.currentNode) return
+            }
+
+        }
+        // 深度优先遍历
+        const children = context.currentNode.children
+        if (children) {
+            for (let i = 0; i < children.length; i++) {
+                // 对children进行深度遍历之前，设置上下文
+                context.parent = context.currentNode
+                context.childIndex = i
+                traverseNode(children[i], context)
+            }
+        }
+    }
+
+    function traverse(ast) {
+        // 上下文对象
+        const context = {
+            currentNode: null,
+            parent: null,
+            childIndex: 0, // 子元素在父元素children中的索引
+            replaceNode(node) {
+                // 替换节点，修改ast
+                context.parent.children[context.childIndex] = node
+                // 当前节点已经被传进来的 node 替代，所以将上下文的currentNode换成node
+                context.currentNode = node
+            },
+            removeNode() {
+                if (context.parent) {
+                    context.parent.children.splice(context.childIndex, 1)
+                    context.currentNode = null
+                }
+            },
+            transform: [
+                transformText,
+                transformElement
+            ]
+        }
+        console.log('前面')
+        dump(ast)
+        traverseNode(ast, context)
+        console.log('后面')
+        dump(ast)
+    }
+
+    function transformText(node, context) {
+        if (node.type === 'Text') {
+            // node.content = node.content.repeat(2) // 重复两次
+
+            // 将Text替换成 span
+            // context.replaceNode({
+            //     type: 'Element',
+            //     tag: 'span'
+            // })
+
+            // 删除
+            context.removeNode()
+        }
+    }
+
+    function transformElement(node, context) {
+        if (node.type === 'Element' && node.tag === 'p') {
+            node.tag = 'h1'
+        }
+    }
+
+    const template = `<div><p>Vue</p><p>Template</p></div>`
+    const ast = parse(template)
+    traverse(ast)
+</script>
+</body>
+</html>
