@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<script>
+    const data = {text: 'hello world'}
+    let activeEffect
+    const bucket = new Set() // 副作用函数的桶
+
+    function effect(fn) {
+        activeEffect = fn
+        fn() // 执行副作用函数
+    }
+
+    const obj = new Proxy(data, {
+        get(target, p, receiver) {
+            if (activeEffect) bucket.add(activeEffect)
+            return Reflect.get(...arguments)
+        },
+        set(target, p, value, receiver) {
+            Reflect.set(...arguments)
+            bucket.forEach(fn => fn())
+            return Reflect.set(...arguments)
+        }
+    })
+
+    effect(() => {
+        console.log('effect run')
+        document.body.innerHTML = obj.text
+    })
+
+    setTimeout(() => {
+        obj.text = 'heeeeeeeeee'
+    }, 1000)
+</script>
+</body>
+</html>
