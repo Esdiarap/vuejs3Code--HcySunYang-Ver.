@@ -81,10 +81,14 @@ effect(() => {
     tmp2 = obj.foo
 })
 
-setTimeout(() => {
-    obj.foo = false
-}, 1000)
+// setTimeout(() => {
+//     obj.foo = false
+// }, 1000)
 
 // setTimeout(() => {
 //     obj.foo = false
 // }, 2000)
+
+obj.foo = false
+obj.foo = false
+obj.bar = false // 此处会执行3次! Vue的bug
