@@ -1,0 +1,22 @@
+{
+  "name": "vuejs3-code",
+  "version": "1.0.0",
+  "description": "图灵那边的代码也会对照一下\r 总的还是自己写一遍，加点自己注释，也修改了一些书上觉得有问题的代码",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Esdiarap/vuejs3Code--HcySunYang-Ver..git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Esdiarap/vuejs3Code--HcySunYang-Ver./issues"
+  },
+  "homepage": "https://github.com/Esdiarap/vuejs3Code--HcySunYang-Ver.#readme",
+  "dependencies": {
+    "@types/core-js": "^2.5.5"
+  }
+}
