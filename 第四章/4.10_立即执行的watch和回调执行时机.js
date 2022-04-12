@@ -10,11 +10,11 @@ const bucket = new WeakMap() // 副作用函数的桶 使用WeakMap
 const p = Promise.resolve() // 使用promise实例将任务添加到微任务队列
 
 let isFlushing = false // 是否正在刷新队列
-function flushJob(f) {
+function flushJob() {
     if (isFlushing) return // 如果正在刷新，则什么也不做
     isFlushing = true // 正在刷新
     p.then(() => { // 将副作用函数的执行放到微任务队列中
-        jobQueue.forEach(effectFn => effectFn(f)) // 取出任务队列中的所有副作用函数执行
+        jobQueue.forEach(effectFn => effectFn()) // 取出任务队列中的所有副作用函数执行
     }).finally(() => {
         isFlushing = false // 重置刷新标志
     })
@@ -110,7 +110,7 @@ function watch(source, cb, options = {}) {
     }
     let oldValue, newValue
 
-    function job(effectFn) {
+    function job() {
         newValue = effectFn() // 数据更新时调用副作用函数，并将更新的值放到newValue上
         cb(oldValue, newValue)
         oldValue = newValue // 更新旧值
@@ -127,15 +127,18 @@ function watch(source, cb, options = {}) {
             scheduler(fn) {
                 // flush如果是post,放到微任务队列中执行
                 if (options.flush === 'post') {
-                    // p.then(() => job(fn))
+                    // 会执行n次
+                    // const p = Promise.resolve()
+                    // p.then(() => job())
+                    // 只执行一次，不关心中间状态
                     jobQueue.add(job)
-                    flushJob(fn) // flushJob函数加了第一个参数，用于此处.
-                }else job(fn)
+                    flushJob() // flushJob函数加了第一个参数，用于此处.
+                }else job()
             }
         }
     )
     if (options.immediate) {
-        job(effectFn) // 直接触发scheduler函数，里面会触发cb
+        job() // 直接触发scheduler函数，里面会触发cb
     } else {
         oldValue = effectFn() // 执行一次副作用函数, 但不执行cb，因为cb是在数据更新的时候通过scheduler进行调用的
     }
@@ -156,7 +159,6 @@ function traverse(value, seen = new Set()) {
 
 // 此处如果watch的是整个响应式数据，则无法取得oldValue和newValue
 watch(() => obj.foo, (oldValue, newValue) => {
-    // console.log('watch!')
     console.log('oldValue: ', oldValue, 'newValue: ', newValue)
 }, {
     // immediate: true, // 立即执行一次cb
