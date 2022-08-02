@@ -134,8 +134,10 @@ function computed(getter) {
                 value = effectFn()
                 dirty = false
             }
-            // 当读取value时，手动调用track函数进行追踪
-            track(obj, 'value')
+            if(activeEffect) {
+                // 当读取value时，手动调用track函数进行追踪
+                track(obj, 'value')
+            }
             return value
         }
     }
