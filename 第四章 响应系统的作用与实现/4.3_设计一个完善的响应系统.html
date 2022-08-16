@@ -45,9 +45,10 @@
     // trigger函数
     function trigger(target, key) {
         const depsMap = bucket.get(target) // target Map
-        if (!depsMap) return ;
+        if (!depsMap) return true;
         const effects = depsMap.get(key) // effectFn Set
         effects && effects.forEach(fn => fn())
+        return true // 返回true
     }
 
     effect(() => {
