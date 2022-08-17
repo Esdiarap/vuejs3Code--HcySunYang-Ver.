@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<div id="app"></div>
+<script>
+    // propsKey 属性是否应该作为DOM Property被设置。
+    // true 表示可以使用DOM Property设置，el[propsKey] = xx, false表示只可以用setAttribute设置
+    function shouldSetAsProps(el, propsKey, value) {
+        // 所有表单元素都具有form属性表示
+        if (propsKey === 'form' && el.tagName.toLowerCase() === 'input')
+            return false
+        return propsKey in el
+    }
+
+    // 渲染器
+    function createRenderer(options = {}) {
+        const {
+            createElement,
+            setElementText,
+            insert,
+            patchProps
+        } = options
+
+        // 挂载函数
+        function mountElement(vnode, container) {
+            // 通过vnode的el属性获得真实DOM
+            const el = vnode.el = createElement(vnode.type)
+            // children处理
+            if (typeof vnode.children === 'string') {
+                // 如果节点值是string，设置文本
+                setElementText(el, vnode.children)
+            } else if (Array.isArray(vnode.children)) {
+                // children是一个数组，遍历这个数组，数组每个元素都是一个vnode
+                // 调用patch将他们挂载上去. oldVNode=null, container = el
+                vnode.children.forEach(child => {
+                    patch(null, child, el)
+                })
+            }
+            // 设置vnode属性
+            if (vnode.props) {
+                for (const propsKey in vnode.props) {
+                    const value = vnode.props[propsKey];
+                    /*
+                    // if (propsKey in el) { // HTML Attribute 跟 DOM Property有对应
+                    if (shouldSetAsProps(el, propsKey, value)) { // HTML Attribute 跟 DOM Property有对应
+                        const type = typeof el[propsKey]
+
+                        // 如果type 是布尔类型的值而且value是空字符串，说明应该设置为true，而不是false
+                        if (type === 'boolean' && value === '') el[propsKey] = true // 矫正设置DOM Property
+                        else el[propsKey] = value // 设置DOM Property
+
+                    } else { // HTML Attribute 和 DOM Property 没对应，比如class 和 className
+                        el.setAttribute(propsKey, vnode.props[propsKey])
+                    }
+                    */
+                    patchProps(el, propsKey, null, value)
+                }
+            }
+            // 将el挂载在container上
+            insert(el, container)
+        }
+
+        // 更新函数
+        function patchElement(oldVNode, newVNode) {
+
+        }
+
+        // 补丁函数
+        function patch(oldVNode, newVNode, container) {
+            // oldVNode存在，新旧vnode的type不同
+            if (oldVNode && oldVNode.type !== newVNode.type) {
+                unmounted(oldVNode)
+                oldVNode = null
+            }
+            // 代码运行到这说明oldVNode和newVNode的type是相同的
+            const {type} = newVNode
+            // newVNode type是string, 说明是普通标签元素. 如果type是object，则描述的是组件
+            if (typeof type === 'string') {
+                if (!oldVNode) {
+                    // 挂载
+                    mountElement(newVNode, container)
+                } else {
+                    patchElement(oldVNode, newVNode)
+                }
+            }else if (typeof type === 'object'){
+                // 组件类型的VNode
+            }else if (type === 'xxx'){
+                // 其他类型的VNode
+            }
+
+        }
+
+        // 卸载函数
+        function unmounted(vnode) {
+            const parent = vnode.el.parentNode
+            if (parent) parent.removeChild(vnode.el)
+        }
+
+        // 渲染函数
+        function render(vnode, container) {
+            if (vnode) {
+                // 新vnode存在，将其与旧vnode一起传递给patch函数打补丁
+                patch(container._vnode, vnode, container)
+            } else {
+                if (container._vnode) {
+                    // 新vnode不存在，旧vnode存在，说明是卸载(unmount)操作
+                    // 清空DOM
+                    unmounted(container._vnode)
+                }
+            }
+            container._vnode = vnode // vnode改成旧的
+        }
+
+        // 同构渲染
+        function hydrate(vnode, container) {
+
+        }
+
+        return {
+            render,
+            hydrate
+        }
+    }
+
+    // normalizeClass里处理Object.
+    function handleObject(set, obj) {
+        for (const key in obj) {
+            if (obj[key]) set.add(key) // 如果对象的值为true, set里把键(className)加进去
+        }
+    }
+
+    function normalizeClass(classValue) {
+        // 字符串
+        if (typeof classValue === 'string') return classValue
+        let resultClassSet = new Set()
+        // 数组和对象情况
+        if (Array.isArray(classValue)) {
+            for (const value of classValue) {
+                if (typeof value === 'string') resultClassSet.add(value)
+                else {
+                    // 对象
+                    handleObject(resultClassSet, value)
+                }
+            }
+        } else {
+            // 对象
+            handleObject(resultClassSet, classValue)
+        }
+        return Array.from(resultClassSet).join(' ').trim()
+    }
+
+    const vnode = {
+        type: 'div',
+        props: {
+            id: 'foo',
+            class: normalizeClass([
+                'ds',
+                {
+                    test1: true,
+                    test2: false,
+                    test3: true
+                }
+            ])
+        },
+        children: [
+            {
+                type: 'h1',
+                children: 'hello h1'
+            }
+        ]
+    }
+    const renderer = createRenderer({
+        createElement(tag) {
+            return document.createElement(tag)
+        },
+        setElementText(el, text) {
+            el.textContent = text
+        },
+        insert(el, parent, anchor = null) {
+            parent.insertBefore(el, anchor)
+        },
+        patchProps(el, propsKey, previousValue, nextValue) {
+            if (propsKey === ' class') {
+                el.className = nextValue
+            } else if (shouldSetAsProps(el, propsKey, nextValue)) { // HTML Attribute 跟 DOM Property有对应
+                const type = typeof el[propsKey]
+
+                // 如果type 是布尔类型的值而且value是空字符串，说明应该设置为true，而不是false
+                if (type === 'boolean' && nextValue === '') el[propsKey] = true // 矫正设置DOM Property
+                else el[propsKey] = nextValue // 设置DOM Property
+
+            } else { // HTML Attribute 和 DOM Property 没对应，比如class 和 className
+                el.setAttribute(propsKey, vnode.props[propsKey])
+            }
+        }
+    })
+    renderer.render(vnode, document.getElementById('app'))
+
+</script>
+</body>
+</html>

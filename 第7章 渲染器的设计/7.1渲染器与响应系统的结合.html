@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<div id="app"></div>
+<script src="https://unpkg.com/@vue/reactivity@3.0.2/dist/reactivity.global.js"></script>
+<script>
+    const {effect, ref} = VueReactivity;
+    function renderer(domString, container){
+        container.innerHTML = domString
+    }
+    const count = ref(0)
+    effect(() => {
+        renderer(`<h1>${count.value}</h1>`, document.getElementById('app'))
+    })
+    setTimeout(() => {
+        count.value++
+    }, 1000)
+</script>
+</body>
+</html>

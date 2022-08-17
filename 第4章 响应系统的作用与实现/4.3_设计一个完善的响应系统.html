@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<script>
+    const data = {text: 'hello world'}
+    let activeEffect
+    // const bucket = new Set() // 副作用函数的桶
+    const bucket = new WeakMap() // 副作用函数的桶 使用WeakMap
+
+    function effect(fn) {
+        activeEffect = fn
+        fn() // 执行副作用函数
+    }
+
+    const obj = new Proxy(data, {
+        get(target, p, receiver) {
+            track(target, p)
+            return Reflect.get(...arguments)
+        },
+        set(target, p, value, receiver) {
+            Reflect.set(...arguments) // 设置属性值
+            trigger(target, p) // 把副作用函数取出并执行
+            return Reflect.set(...arguments)
+        }
+    })
+
+    // track函数
+    function track(target, key) {
+        if (!activeEffect) return target[key]// 没有正在执行的副作用函数 直接返回
+        let depsMap = bucket.get(target)
+        if (!depsMap) { // 不存在，则创建一个Map
+            bucket.set(target, depsMap = new Map())
+        }
+        let deps = depsMap.get(key) // 根据key得到 depsSet(set类型), 里面存放了该 target-->key 对应的副作用函数
+        if (!deps) { // 不存在，则创建一个Set
+            depsMap.set(key, (deps = new Set()))
+        }
+        deps.add(activeEffect) // 将副作用函数加进去
+    }
+
+    // trigger函数
+    function trigger(target, key) {
+        const depsMap = bucket.get(target) // target Map
+        if (!depsMap) return true;
+        const effects = depsMap.get(key) // effectFn Set
+        effects && effects.forEach(fn => fn())
+        return true // 返回true
+    }
+
+    effect(() => {
+        console.log('effect run')
+        document.body.innerHTML = obj.text
+    })
+
+    setTimeout(() => {
+        obj.text = 'heeeeeeeeee'
+    }, 1000)
+</script>
+</body>
+</html>

@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+
+    // let arr = [1, 2, [3, 4], [5, 6], [7, 8, [9, 10, [11, 12]]]]
+    // // 迭代方式
+    // function flat(arr) {
+    //     while (arr.some(item => Array.isArray(item))) {
+    //         arr = [].concat(...arr)
+    //     }
+    //     return arr
+    // }
+    //
+    // function f2(arr) {
+    //     const resArr = [],
+    //         arrs = [...arr]
+    //     while (arrs.length) {
+    //         const item = arrs.shift() // 取出第一个元素
+    //         if (Array.isArray(item)) {
+    //             arrs.unshift(...item)
+    //         }else {
+    //             resArr.push(item)
+    //         }
+    //     }
+    //     return resArr
+    // }
+    //
+    // // 递归方式
+    // const f = array => array.reduce((pre, cur) => {
+    //     return Array.isArray(cur) ? [...pre, ...f(cur)] : [...pre, cur]
+    // }, [])
+    //
+    // // 字符串
+    // function f3(arr) {
+    //     return JSON.parse('[' + JSON.stringify(arr).replace(/\[|\]/g, '') + ']')
+    // }
+
+    /*const obj = {1: 111, 3: 333, 12:1200}
+    let arr = Array(12).fill(null)
+    for (let key in obj) {
+        arr[Number(key) - 1] = obj[key]
+    }
+    console.log(arr)
+    // Array(12).fill(null).map((_, index) => obj[index] ? obj[index] : null).shift() // 用map
+    // const res = {...arr}
+    // console.log(res)
+
+    // let obj = {1: 222, 2: 123, 5: 888};
+    // obj.length = 12;
+    // let _obj = Array.from(obj).slice(1);
+    // let newObj = _obj.map((item) => {
+    //     if (item === undefined) {
+    //         return null;
+    //     } else {
+    //         return item;
+    //     }
+    // });
+    // console.log(newObj)*/
+
+    /*class LazyMan {
+        name = undefined;
+        fnQueue = [];
+        constructor(name) {
+            this.name = name
+            console.log('name is', name)
+            setTimeout(() => {
+                this.next()
+            }, 0)
+        }
+        eat(foodName) {
+            const fn = () => {
+                console.log(`eating ${foodName}`)
+                this.next()
+            }
+            this.fnQueue.push(fn)
+            return this
+        }
+        sleep(delay) {
+            const fn = () => {
+                this.wait(delay).then(() => {
+                    console.log(`waiting for ${delay} seconds`)
+                    this.next()
+                })
+            }
+            this.fnQueue.push(fn)
+            return this
+        }
+        sleepFirst(delay) {
+            const fn = () => {
+                this.wait(delay).then(() => {
+                    console.log(`waiting for ${delay} seconds`)
+                    this.next()
+                })
+            }
+            this.fnQueue.unshift(fn)
+            return this
+        }
+        next() {
+            const fn = this.fnQueue.shift()
+            fn && fn()
+        }
+        wait(delay) {
+            return new Promise(resolve => setTimeout(resolve, delay))
+        }
+    }
+
+    new LazyMan('abc').eat('ber').sleepFirst(1000).eat('bar').sleep(2000).eat('junk food')*/
+
+    // 取数组交集，用Hash
+    /*let arr1 = [1, 2, 2, 1], arr2 = [2, 2, 2, 1, 5]
+    /!*!// 迭代写法
+    let map = new Map()
+    for (const number of arr1) {
+        if (map.get(number)) { // 存在，值+1
+            map.set(number, map.get(number) + 1)
+        }else map.set(number, 1)
+    }
+
+    let resArr = []
+    for (const number of arr2) {
+        if (map.has(number) && map.get(number) > 0) {
+            resArr.push(number)
+            map.set(number, map.get(number) - 1)
+        }
+    }
+    console.log(resArr)*!/
+    /!*!// 函数写法
+    const m = arr1.reduce((obj, item) => {
+        obj[item] ? obj[item]++ : obj[item] = 1
+        return obj
+    }, {})
+    const res = arr2.reduce((resArr, item) => {
+        if (m[item] && m[item] > 0) {
+            resArr.push(item) // 结果数组推进去这个交集元素
+            m[item]-- // map里的值--
+        }
+        return resArr
+    }, [])
+    console.log(res)*!/
+    function intersect(arr1, arr2) {
+        const s1 = new Set(arr1), s2 = new Set(arr2)
+        return [...s1].filter(item => s2.has(item))
+    }
+    console.log(intersect(arr1, arr2));*/
+
+    /*// 67题
+    function getRandomArr(min, max) {
+        const minInt = Math.ceil(min),
+            maxInt = Math.floor(max)
+        return Math.floor(Math.random() * (maxInt - minInt + 1) + minInt)
+    }
+    let arr = Array.from({length: 10}, _ => {return getRandomArr(0, 99)})
+    arr = arr.sort((a, b) => a - b) // 排序
+    arr = [...new Set(arr)] // 去重
+    console.log(arr)
+
+    const hashMap = {}
+    arr.map(item => {
+        const i = Math.floor(item / 10)
+        if (!hashMap[i]) hashMap[i] = []
+        hashMap[i].push(item)
+    })
+
+    // 将hashMap里的数组组合成结果数组
+    const resArr = []
+    let idx = 0
+    for (const key in hashMap) {
+        resArr[idx++] = hashMap[key]
+    }
+    console.log(resArr)*/
+
+    /*// 求连续的版本 67题
+    function formArray1(arr) {
+        const sortedArr = Array.from(new Set(arr)).sort((a, b) => a - b);
+
+        return sortedArr.reduce((acc, cur) => {
+            const lastArr = acc.slice().pop() || [];
+
+            const lastVal = lastArr.slice().pop();
+            if (lastVal!=null && cur-lastVal === 1) {
+                lastArr.push(cur);
+            } else {
+                acc.push([cur]);
+            }
+
+            return acc;
+        }, []);
+    }
+
+    function genNumArray(num, base = 100) {
+        return Array.from({length: num}, () => Math.floor(Math.random()*base));
+    }
+
+    const arr = genNumArray(10, 20); //[2, 10, 3, 4, 5, 11, 10, 11, 20];
+    console.log(arr)
+    const res = formArray1(arr);
+
+    console.log(`res ${JSON.stringify(res)}`);*/
+
+    // 字符串大小写替换
+    /*let str = 'AbCdEFgGjSd'
+    const ZAscii = 'Z'.codePointAt(0) // 大写字母的ascii在前面 是90
+    const arr = Array.from(str, char => {
+        return char.codePointAt(undefined) < ZAscii ? char.toLowerCase() : char.toUpperCase() // 比Z小就是大写字母，调用toLowerCase
+    }).join('')
+    console.log(arr)
+
+    str = str.replace(/[a-zA-Z]/g, char => {
+        return /[a-z]/.test(char) ? char.toUpperCase() : char.toLowerCase()
+    })
+    console.log(str)*/
+
+    // 字符串匹配算法 includes(string):boolean, match(reg/string):Array 但是有新的属性,比如index, groups, input, search(reg/string, startIdx):Number
+    /*let find = (S, T) => S.search(T)
+    find = (S, T) => {
+        const res = S.match(T)
+        return res ? res.index : -1
+    }
+
+    find = function (S, T) {
+        const slen = S.length, tlen = T.length
+        if (!slen || !tlen || slen < tlen) return -1
+        for (let i = 0; i < slen - tlen; i++) {
+            if (S.substr(i, tlen) === T) return i
+        }
+        return -1
+    }*/
+
+    /* 右移字符串
+    function spint(arr, number) {
+        // 自己的方法1
+        // const tmp = arr.splice(arr.length - number % arr.length, number)
+        // arr.unshift(...tmp)
+        // 方法2
+        return arr.splice(-(number % arr.length)).concat(arr)
+        // 方法3
+        // for (let i = 0; i < number; i++) {
+        //     arr.unshift(arr.pop())
+        // }
+    }
+
+    const arr = [1, 2, 3, 4, 5, 6, 7]
+    console.log(spint(arr, 2));
+    // spint(arr, 3)
+    // console.log(arr)*/
+
+    // const arr = [0, 0, 0, 0, 1, 0, 3, 12, 0, 0]
+    // 自己的方法
+    // arr.forEach((v, idx) => {
+    //     if (v) return
+    //     else arr.push(...arr.splice(idx, 1))
+    // })
+    // console.log(arr)
+    //
+    // function zeroMove(arr) {
+    //     const len = arr.length
+    //     let j = 0
+    //     for (let i = 0; i < len - j; i++) {
+    //         if (arr[i] === 0) {
+    //             arr.push(0)
+    //             arr.splice(i, 1)
+    //             i--
+    //             j++
+    //         }
+    //     }
+    // }
+    // const zeroMove = arr => {
+    //     return arr.filter(Boolean).concat(Array(arr.length - arr.filter(Boolean).length).fill(0))
+    // }
+    // console.log(zeroMove(arr));
+
+    /*function twoNumber(arr, target) {
+        const map = new Map() // arr[i] --> index
+        arr.forEach((v, idx) => {
+            map.set(v, idx)
+        })
+        let res
+        arr.forEach((v, idx) => {
+            if (map.has(target - v)) res = [map.get(target - v), idx]
+        })
+        return res || new Error('404')
+    }
+
+    console.log(twoNumber([1, 2, 3, 4], 3));*/
+
+    function bfs(target, id) {
+        const queue = [...target]
+        do {
+            const current = queue.shift()
+            if (current.children) {
+                queue.push(...current.children.map(x => ({ ...x, path: (current.path || current.id) + '-' + x.id })))
+            }
+            if (current.id === id) {
+                return current
+            }
+        } while(queue.length)
+        return undefined
+    }
+
+    function dfs(target, id) {
+        const stack = [...target]
+        do {
+            const current = stack.pop()
+            if (current.children) {
+                stack.push(...current.children.map(x => ({ ...x, path: (current.path || current.id) + '-' + x.id })))
+            }
+            if (current.id === id) {
+                return current
+            }
+        } while(stack.length)
+        return undefined
+    }
+
+    // 公共的搜索方法，默认bfs
+    function commonSearch(target, id, mode) {
+        const stackOrQueue = [...target]
+        do {
+            const current = stackOrQueue[mode === 'dfs' ? 'pop' : 'shift']()
+            if (current.children) {
+                stackOrQueue.push(...current.children.map(x => ({ ...x, path: (current.path || current.id) + '-' + x.id })))
+            }
+            if (current.id === id) {
+                return current
+            }
+        } while(stackOrQueue.length)
+        return undefined
+    }
+
+    const data = [{
+        id: '1',
+        name: 'test1',
+        children: [
+            {
+                id: '11',
+                name: 'test11',
+                children: [
+                    {
+                        id: '111',
+                        name: 'test111'
+                    },
+                    {
+                        id: '112',
+                        name: 'test112'
+                    }
+                ]
+
+            },
+            {
+                id: '12',
+                name: 'test12',
+                children: [
+                    {
+                        id: '121',
+                        name: 'test121'
+                    },
+                    {
+                        id: '122',
+                        name: 'test122'
+                    }
+                ]
+            }
+        ]
+    }];
+
+</script>
+</body>
+</html>
