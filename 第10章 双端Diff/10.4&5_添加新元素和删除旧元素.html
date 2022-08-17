@@ -149,7 +149,7 @@
                         }
                     }else if (newStartIndex > newEndIndex && oldStartIndex <= oldEndIndex) { // 说明有剩余的oldVnode
                         // 卸载
-                        for (let i = oldStartIndex; i < oldEndIndex; i++) {
+                        for (let i = oldStartIndex; i <= oldEndIndex; i++) {
                             unmounted(oldChildren[i])
                         }
                     }
