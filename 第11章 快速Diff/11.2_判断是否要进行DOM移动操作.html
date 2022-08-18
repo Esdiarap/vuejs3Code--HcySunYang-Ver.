@@ -115,17 +115,55 @@
 
                     // 处理完相同的前置和后置之后进行判断
                     if (j <= newEndIdx && j > oldEndIdx) { // 有newVnode需要挂载，而oldVnode已经全都处理完了
-                        const anchorIdx = newEndIdx + 1,
-                            anchor = anchorIdx < newChildren.length ? newChildren[anchorIdx].el : null // 如果超出了newChildren.length 那就直接挂载在后面
+                        const anchorIdx = newEndIdx + 1
+                        const anchor = anchorIdx < newChildren.length ? newChildren[anchorIdx].el : null // 如果超出了newChildren.length 那就直接挂载在后面
                         while (j <= newEndIdx) {
                             patch(null, newChildren[j++], container, anchor)
                         }
                     } else if (j > newEndIdx && j <= oldEndIdx) { // oldVnode需要卸载，newVnode已经全部处理完了
-                        while (j <= oldEndIdx) unmounted(oldChildren[j++])
+                        while (j <= oldEndIdx) {
+                            unmounted(oldChildren[j++])
+                        }
                     } else { // 移动DOM判断
-                        const count = newEndIdx - j + 1, // count是没有被处理的newVnode的个数
-                            source = new Array(count).fill(-1) // source数组
+                        const count = newEndIdx - j + 1 // count是没有被处理的newVnode的个数
+                        const source = new Array(count).fill(-1) // source数组
 
+                        // oldStart和newStart分别为起始索引，即j
+                        const oldStart = j
+                        const newStart = j
+                        const keyIndex = {} // 索引表
+                        // moved表示该节点需要移动，pos表示遍历旧的子节点中遇到的最大索引值k
+                        let moved = false
+                        let pos = 0
+                        for (let i = newStart; i < newEndIdx; i++) {
+                            keyIndex[newChildren[i].key] = i
+                        }
+                        // patched表示更新过的节点的数量
+                        let patched = 0
+                        for (let i = oldStart; i < oldEndIdx; i++) {
+                            oldVNode = oldChildren[i]
+                            // 通过索引表快速找到新的一组子节点中具有相同key的节点的位置
+                            if (patched <= count) {
+                                const k = keyIndex[oldVNode.key]
+                                if (typeof k !== 'undefined') { // 找到有
+                                    newVNode = newChildren[k]
+                                    patch(oldVNode, newVNode, container)
+                                    // 每更新一个节点,patched + 1
+                                    patched++
+                                    source[k - newStart] = i
+                                    // 判断节点是否需要移动
+                                    if (k < pos) {
+                                        moved = true
+                                    }else {
+                                        pos = k
+                                    }
+                                }else {
+                                    unmounted(oldVNode)
+                                }
+                            }else { // 更新过的节点大于需要更新的节点，则卸载多余的节点
+                                unmounted(oldVNode)
+                            }
+                        }
                     }
                 }
             } else { // newVNode.children === null或者'' 没有新子节点，
